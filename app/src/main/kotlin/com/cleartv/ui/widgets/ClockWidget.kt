@@ -34,6 +34,7 @@ import java.util.Locale
  */
 @Composable
 fun ClockWidget(
+    is12Hour: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalClearTVColors.current
@@ -48,8 +49,9 @@ fun ClockWidget(
     }
 
     val date = remember(currentTime) { Date(currentTime) }
-    val hours = remember(currentTime) {
-        SimpleDateFormat("HH", Locale.getDefault()).format(date)
+    val hours = remember(currentTime, is12Hour) {
+        val pattern = if (is12Hour) "h" else "HH"
+        SimpleDateFormat(pattern, Locale.getDefault()).format(date)
     }
     val minutes = remember(currentTime) {
         SimpleDateFormat("mm", Locale.getDefault()).format(date)

@@ -34,6 +34,7 @@ The app was crashing on launch in an Android TV emulator (API 36, arm64, 1080p).
 ### The Bug That Was Fixed
 1. **Layout crash**: `LazyVerticalGrid` inside `Column + verticalScroll()` — illegal in Compose (lazy layouts can't be inside bounded scroll containers). Fixed by replacing the outer scroll with `LazyColumn` and inner grid with `FlowRow`.
 2. **Invisible Window crash**: `Float.MAX_VALUE` passed to `Brush.linearGradient(end = Offset(Float.MAX_VALUE, ...))` causes native `android.graphics.LinearGradient` to throw `IllegalArgumentException` on some Android versions. Fixed by using Compose-standard `Offset.Infinite`.
+3. **Missing elements**: The `WeatherWidget` had an unconstrained `Modifier.weight(1f)` on its forecast columns, causing it to greedily consume infinite width inside its parent `Row`. This pushed all other elements (Clock, Status, Apps grid) off the screen! Removed the weight constraint.
 
 ### Immediate
 - [ ] **Actually test the emulator visually** — the app launches without crashing, but the user hadn't confirmed the UI was rendering correctly when we ran out of context. Open Android Studio, Run the app, confirm the home screen renders.

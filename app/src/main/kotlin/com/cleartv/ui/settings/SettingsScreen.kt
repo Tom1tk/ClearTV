@@ -69,8 +69,8 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 80.dp, vertical = 40.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 80.dp, vertical = 48.dp),
         ) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {

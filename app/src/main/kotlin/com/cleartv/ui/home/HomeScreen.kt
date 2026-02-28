@@ -143,7 +143,7 @@ fun HomeScreen(
 
                             Column(horizontalAlignment = Alignment.End) {
                                 if (preferences.showClock) {
-                                    ClockWidget()
+                                    ClockWidget(is12Hour = preferences.weather12hr)
                                     Spacer(Modifier.height(12.dp))
                                 }
                                 StatusWidget(
@@ -232,9 +232,7 @@ private fun FavouritesSection(
                         isLarge = true,
                         onClick = { onAppClick(app) },
                         onLongClick = { onAppLongClick(app) },
-                        modifier = Modifier.fillParentMaxWidth(
-                            1f / minOf(favourites.size, 4).coerceAtLeast(1) - 0.02f
-                        ),
+                        modifier = Modifier.fillParentMaxWidth(0.18f),
                     )
                 }
             }
