@@ -17,20 +17,18 @@ import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
 
 /**
- * Favourites row — displays up to 6 user-pinned apps as large 16:9 tiles.
- * Uses a horizontal LazyRow. In Phase 1, favourites are hardcoded;
- * Phase 2 will wire this to DataStore preferences.
+ * Favourites row — up to 6 user-pinned apps as large 16:9 tiles.
  */
 @Composable
 fun FavouritesRow(
     favourites: List<AppInfo>,
     onAppClick: (AppInfo) -> Unit,
+    onAppLongClick: (AppInfo) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalClearTVColors.current
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Section header
         Text(
             text = "FAVOURITES",
             style = ClearTVTypography.sectionHeader,
@@ -61,9 +59,10 @@ fun FavouritesRow(
                         app = app,
                         isLarge = true,
                         onClick = { onAppClick(app) },
+                        onLongClick = { onAppLongClick(app) },
                         modifier = Modifier.fillParentMaxWidth(
                             1f / minOf(favourites.size, 4).coerceAtLeast(1)
-                            - 0.02f  // account for gap
+                            - 0.02f
                         ),
                     )
                 }

@@ -17,20 +17,20 @@ import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
 
 /**
- * Apps grid — displays all installed non-system apps in a 6-column grid
- * of 1:1 square tiles. The Settings tile is always rendered last.
+ * Apps grid — 6-column grid of 1:1 square tiles.
+ * Settings tile is always last.
  */
 @Composable
 fun AppsGrid(
     apps: List<AppInfo>,
     onAppClick: (AppInfo) -> Unit,
+    onAppLongClick: (AppInfo) -> Unit = {},
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalClearTVColors.current
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Section header
         Text(
             text = "APPS",
             style = ClearTVTypography.sectionHeader,
@@ -45,7 +45,6 @@ fun AppsGrid(
             contentPadding = PaddingValues(bottom = 32.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            // App tiles
             items(
                 items = apps,
                 key = { it.packageName },
@@ -54,10 +53,10 @@ fun AppsGrid(
                     app = app,
                     isLarge = false,
                     onClick = { onAppClick(app) },
+                    onLongClick = { onAppLongClick(app) },
                 )
             }
 
-            // Settings tile — always last
             item(key = "settings") {
                 SettingsTile(onClick = onSettingsClick)
             }

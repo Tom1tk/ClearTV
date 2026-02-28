@@ -75,6 +75,9 @@ dependencies {
     // Activity Compose
     implementation("androidx.activity:activity-compose:1.9.0")
 
+    // DataStore (Preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     // Image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 

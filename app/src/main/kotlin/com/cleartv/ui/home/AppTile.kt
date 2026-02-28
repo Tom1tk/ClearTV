@@ -2,14 +2,20 @@ package com.cleartv.ui.home
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
@@ -30,23 +35,21 @@ import coil.compose.AsyncImage
 import com.cleartv.data.model.AppInfo
 import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
-import androidx.compose.material3.Text
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 
 /**
  * Reusable app tile composable for both the Favourites row (16:9) and
  * the Apps grid (1:1). Implements the frosted glass card aesthetic,
  * focus ring, scale animation, and label overlay from the spec.
+ *
+ * Supports long-press for context menu (Phase 2).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppTile(
     app: AppInfo,
     isLarge: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalClearTVColors.current
@@ -56,13 +59,12 @@ fun AppTile(
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.07f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.55f,    // slightly underdamped for spring feel
+            dampingRatio = 0.55f,
             stiffness = 400f,
         ),
         label = "tileScale",
     )
 
-    // Shadow intensity changes on focus
     val elevation = if (isFocused) 12.dp else 2.dp
     val cornerRadius = if (isLarge) 20.dp else 16.dp
     val shape = RoundedCornerShape(cornerRadius)
@@ -86,13 +88,14 @@ fun AppTile(
                 }
             )
             .onFocusChanged { isFocused = it.isFocused }
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        // App icon — fills the tile
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        // App icon + label
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             AsyncImage(
                 model = app.icon,
                 contentDescription = app.label,
@@ -102,7 +105,6 @@ fun AppTile(
                 contentScale = ContentScale.Fit,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            // Always show label for TV readability
             Text(
                 text = app.label,
                 style = if (isLarge) ClearTVTypography.tileLabel else ClearTVTypography.tileLabelSmall,
@@ -116,7 +118,7 @@ fun AppTile(
             )
         }
 
-        // Focus label bar at bottom (visible on focus only)
+        // Focus label bar at bottom
         if (isFocused) {
             Box(
                 modifier = Modifier
@@ -144,8 +146,8 @@ fun AppTile(
 
 /**
  * Settings tile — always appears last in the grid.
- * Uses a gear icon and distinct styling.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SettingsTile(
     onClick: () -> Unit,
@@ -180,7 +182,7 @@ fun SettingsTile(
                 }
             )
             .onFocusChanged { isFocused = it.isFocused }
-            .clickable { onClick() },
+            .combinedClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
