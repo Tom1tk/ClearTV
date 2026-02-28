@@ -88,8 +88,8 @@ class MainActivity : ComponentActivity() {
         appInstallReceiver?.let { unregisterReceiver(it) }
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
-        if (event?.action == KeyEvent.ACTION_DOWN) {
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
             if (screensaverViewModel.isActive.value) {
                 screensaverViewModel.dismiss()
                 return true
