@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClearTV</string>
+    <string name="section_favourites">Favourites</string>
+    <string name="section_apps">Apps</string>
+    <string name="settings">Settings</string>
+    <string name="wifi_strong">WiFi ▸ Strong</string>
+    <string name="wifi_weak">WiFi ▸ Weak</string>
+    <string name="wifi_none">No WiFi</string>
+</resources>

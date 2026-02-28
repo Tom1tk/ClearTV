@@ -1,0 +1,25 @@
+# Built outputs
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+app/build/
+
+# APK outputs
+*.apk
+*.aab
+
+# Signing
+*.jks
+*.keystore
+
+# Spec & mockup (reference only, not shipped)
+ClearTV_Launcher_Spec.md
+tv-launcher-light.jsx
+mockup/
