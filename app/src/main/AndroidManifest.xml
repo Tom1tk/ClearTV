@@ -14,21 +14,29 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:banner="@drawable/banner">
+        android:banner="@drawable/banner"
+        android:theme="@android:style/Theme.NoTitleBar">
 
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTask"
             android:resizeableActivity="false"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden">
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@android:style/Theme.NoTitleBar">
 
-            <!-- Register as a home screen launcher -->
+            <!-- Normal launcher entry (shows in app grid / Leanback launcher) -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+
+            <!-- Also register as a HOME replacement (for Fire Stick default launcher) -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
     </application>

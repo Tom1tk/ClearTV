@@ -61,7 +61,12 @@ class MainActivity : ComponentActivity() {
         appInstallReceiver = AppInstallReceiver {
             homeViewModel.loadApps()
         }
-        registerReceiver(appInstallReceiver, AppInstallReceiver.createFilter())
+        androidx.core.content.ContextCompat.registerReceiver(
+            this,
+            appInstallReceiver,
+            AppInstallReceiver.createFilter(),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
 
         setContent {
             val preferences by preferencesRepo.preferences.collectAsState(
