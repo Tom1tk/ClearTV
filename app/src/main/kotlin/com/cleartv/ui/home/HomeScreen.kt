@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -232,7 +233,7 @@ private fun FavouritesSection(
                         isLarge = true,
                         onClick = { onAppClick(app) },
                         onLongClick = { onAppLongClick(app) },
-                        modifier = Modifier.fillParentMaxWidth(0.18f),
+                        modifier = Modifier.width(260.dp),
                     )
                 }
             }

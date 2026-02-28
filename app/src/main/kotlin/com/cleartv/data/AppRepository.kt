@@ -22,10 +22,14 @@ class AppRepository(private val context: Context) {
             .filter { it.packageName != context.packageName }
             .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
             .map { appInfo ->
+                val flags = appInfo.flags
+                val isSystem = (flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0 ||
+                               (flags and android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
                 AppInfo(
                     packageName = appInfo.packageName,
                     label = pm.getApplicationLabel(appInfo).toString(),
                     icon = pm.getApplicationIcon(appInfo.packageName),
+                    isSystemApp = isSystem,
                 )
             }
             .sortedBy { it.label.lowercase() }

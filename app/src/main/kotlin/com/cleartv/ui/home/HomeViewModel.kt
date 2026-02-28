@@ -58,6 +58,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         preferencesRepo.preferences,
     ) { apps, prefs ->
         apps.filter { it.packageName !in prefs.hiddenPackages }
+            .filter { prefs.showSystemApps || !it.isSystemApp }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val favourites: StateFlow<List<AppInfo>> = combine(

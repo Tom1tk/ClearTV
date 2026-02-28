@@ -123,29 +123,7 @@ fun AppTile(
             )
         }
 
-        // Focus label bar at bottom
-        if (isFocused) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(colors.labelOverlay)
-                    .padding(
-                        horizontal = if (isLarge) 10.dp else 6.dp,
-                        vertical = if (isLarge) 6.dp else 4.dp,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = app.label,
-                    style = if (isLarge) ClearTVTypography.tileLabel else ClearTVTypography.tileLabelSmall,
-                    color = colors.labelText,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
+        // No extra label overlay on focus. The scale and border are enough.
     }
 }
 

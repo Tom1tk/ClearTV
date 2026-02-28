@@ -53,8 +53,12 @@ fun ClockWidget(
         val pattern = if (is12Hour) "h" else "HH"
         SimpleDateFormat(pattern, Locale.getDefault()).format(date)
     }
-    val minutes = remember(currentTime) {
-        SimpleDateFormat("mm", Locale.getDefault()).format(date)
+    val minutes = remember(currentTime, is12Hour) {
+        val minStr = SimpleDateFormat("mm", Locale.getDefault()).format(date)
+        if (is12Hour) {
+            val amPm = SimpleDateFormat("a", Locale.getDefault()).format(date)
+            "$minStr $amPm"
+        } else minStr
     }
     val dateString = remember(currentTime) {
         SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(date)
