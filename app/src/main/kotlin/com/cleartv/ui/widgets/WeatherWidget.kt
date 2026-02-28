@@ -104,7 +104,6 @@ fun WeatherWidget(
                     weather.forecast.forEach { day ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f),
                         ) {
                             Text(
                                 text = day.dayName,
