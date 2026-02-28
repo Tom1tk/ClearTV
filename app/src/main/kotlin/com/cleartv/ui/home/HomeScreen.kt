@@ -74,7 +74,7 @@ fun HomeScreen(
                     brush = Brush.linearGradient(
                         colors = listOf(colors.background, colors.backgroundEnd),
                         start = Offset(0f, 0f),
-                        end = Offset(Float.MAX_VALUE, Float.MAX_VALUE),
+                        end = Offset.Infinite,
                     )
                 )
         ) {

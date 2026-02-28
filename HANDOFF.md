@@ -32,13 +32,8 @@ The app was crashing on launch in an Android TV emulator (API 36, arm64, 1080p).
 **The fix is committed and pushed (`958f46d`).** The emulator showed zero crashes after the fix.
 
 ### The Bug That Was Fixed
-`LazyVerticalGrid` inside `Column + verticalScroll()` — illegal in Compose (lazy layouts can't be inside bounded scroll containers). Fixed by:
-- `HomeScreen.kt` now uses a single `LazyColumn` as the root scroll container
-- Apps grid uses `FlowRow` (non-lazy, 6-column) as an item inside the `LazyColumn`
-
----
-
-## Known Remaining Issues / Next Steps
+1. **Layout crash**: `LazyVerticalGrid` inside `Column + verticalScroll()` — illegal in Compose (lazy layouts can't be inside bounded scroll containers). Fixed by replacing the outer scroll with `LazyColumn` and inner grid with `FlowRow`.
+2. **Invisible Window crash**: `Float.MAX_VALUE` passed to `Brush.linearGradient(end = Offset(Float.MAX_VALUE, ...))` causes native `android.graphics.LinearGradient` to throw `IllegalArgumentException` on some Android versions. Fixed by using Compose-standard `Offset.Infinite`.
 
 ### Immediate
 - [ ] **Actually test the emulator visually** — the app launches without crashing, but the user hadn't confirmed the UI was rendering correctly when we ran out of context. Open Android Studio, Run the app, confirm the home screen renders.
