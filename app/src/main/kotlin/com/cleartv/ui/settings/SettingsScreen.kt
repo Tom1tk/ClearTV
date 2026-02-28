@@ -248,7 +248,7 @@ fun SettingsScreen(
             SettingsCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("App Version", style = settingsLabel(), color = colors.textPrimary)
-                    Text("0.3.0", style = ClearTVTypography.status, color = colors.textSecondary)
+                    Text("1.0.0", style = ClearTVTypography.status, color = colors.textSecondary)
                 }
             }
 

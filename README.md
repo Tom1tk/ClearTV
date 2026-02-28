@@ -1,49 +1,94 @@
-# ClearTV
+# ClearTV — Android TV Launcher
 
-A clean, ad-free, lightweight Android TV home screen replacement.
+A lightweight, ad-free home screen replacement for Amazon Fire Stick.
+Built with Kotlin + Jetpack Compose + `androidx.tv`.
 
-**Target device:** Amazon Fire Stick 4K MAX (1st gen) · Fire OS 8 (Android 11 base)
+## Features
 
-## Design Philosophy
-
-The launcher should disappear. It should feel like the TV turned on and your apps are just there. Inspired by iOS 26's liquid glass aesthetic — light, frosted, breathing. No visual noise, no dark patterns, no content you didn't choose.
+- 🏠 **Clean home screen** — gradient background, animated tiles, no ads
+- ⭐ **Favourites row** — pin up to 6 apps (long-press to manage)
+- 🎨 **Dark mode** — Light / Dark / System, instant toggle
+- ⛅ **Weather widget** — Open-Meteo (no API key), 3-day forecast
+- 🕐 **Clock widget** — blinking colon, day & date
+- 📶 **Status bar** — real WiFi signal + device name
+- 🌙 **Screensaver** — Dim, Clock, or Slideshow mode
+- ⚙️ **Settings** — theme, blur, screensaver, weather location
+- 🔄 **Live updates** — app grid refreshes on install/uninstall
+- ♿ **Accessible** — TalkBack content descriptions on all tiles
 
 ## Build
 
+Requires **Android Studio Iguana+** (bundled SDK 34).
+
 ```bash
+# Debug build
 ./gradlew assembleDebug
+
+# Release build (R8 minified)
+./gradlew assembleRelease
 ```
 
 ## Install (ADB sideload)
 
 ```bash
-# Enable developer mode: Settings → My Fire TV → About → click "Build" 7 times
-adb connect <fire_stick_ip>:5555
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ## Set as Default Launcher
 
-On the Fire Stick, press Home → select ClearTV → "Always"
+1. After install, press **Home** on the Fire Stick remote
+2. Fire OS will ask which launcher to use — select **ClearTV**
+3. Choose "Always"
 
-Or via ADB:
-```bash
-adb shell cmd package set-home-activity com.cleartv/.MainActivity
-```
-
-## Revert to Fire OS Launcher
+## Revert to Stock Launcher
 
 ```bash
-adb shell cmd package set-home-activity com.amazon.firelauncher/.Launcher
+adb shell pm clear com.cleartv
 ```
 
-## Tech Stack
+Then press Home — Fire OS launcher will resume as default.
 
-- **Kotlin** + **Jetpack Compose** + **androidx.tv**
-- **Coil** for image loading
-- **Coroutines** for async
-- Min SDK 28 · Target SDK 34
+## Architecture
+
+```
+com.cleartv
+├── data/
+│   ├── AppRepository.kt          # PackageManager queries
+│   ├── AppInstallReceiver.kt     # BroadcastReceiver for installs
+│   ├── PreferencesRepo.kt        # DataStore (JSON)
+│   ├── WeatherRepository.kt      # Ktor + Open-Meteo
+│   └── model/
+│       ├── AppInfo.kt
+│       ├── UserPreferences.kt
+│       └── WeatherData.kt
+├── ui/
+│   ├── home/
+│   │   ├── HomeScreen.kt
+│   │   ├── HomeViewModel.kt
+│   │   ├── AppTile.kt
+│   │   ├── AppsGrid.kt
+│   │   ├── ContextMenu.kt
+│   │   └── FavouritesRow.kt
+│   ├── settings/
+│   │   ├── SettingsScreen.kt
+│   │   └── SettingsViewModel.kt
+│   ├── screensaver/
+│   │   ├── ScreensaverOverlay.kt
+│   │   └── ScreensaverViewModel.kt
+│   ├── widgets/
+│   │   ├── ClockWidget.kt
+│   │   ├── StatusWidget.kt
+│   │   └── WeatherWidget.kt
+│   └── theme/
+│       ├── Colours.kt
+│       ├── Theme.kt
+│       └── Type.kt
+├── util/
+│   ├── FocusUtil.kt
+│   └── IntentUtil.kt
+└── MainActivity.kt
+```
 
 ## License
 
-Private — not for redistribution.
+Private — © 2026

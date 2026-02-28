@@ -40,12 +40,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _contextMenuApp = MutableStateFlow<AppInfo?>(null)
     val contextMenuApp: StateFlow<AppInfo?> = _contextMenuApp.asStateFlow()
 
-    // Weather
+    // Weather (keeps last-known data on network failure)
     private val _weather = MutableStateFlow<WeatherData?>(null)
     val weather: StateFlow<WeatherData?> = _weather.asStateFlow()
 
     private val _weatherLocationName = MutableStateFlow("")
     val weatherLocationName: StateFlow<String> = _weatherLocationName.asStateFlow()
+
+    private val _weatherError = MutableStateFlow<String?>(null)
+    val weatherError: StateFlow<String?> = _weatherError.asStateFlow()
 
     val preferences: StateFlow<UserPreferences> = preferencesRepo.preferences
         .stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
@@ -131,6 +134,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             useCelsius = prefs.weatherCelsius,
         ).onSuccess { data ->
             _weather.value = data.copy(locationName = name)
+            _weatherError.value = null
+        }.onFailure { error ->
+            // Keep last-known weather data — don't clear _weather
+            _weatherError.value = when {
+                error.message?.contains("Unable to resolve host") == true -> "No internet"
+                error.message?.contains("timeout") == true -> "Connection timeout"
+                else -> "Weather unavailable"
+            }
         }
     }
 

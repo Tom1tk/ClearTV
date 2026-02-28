@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -88,6 +90,9 @@ fun AppTile(
                 }
             )
             .onFocusChanged { isFocused = it.isFocused }
+            .semantics {
+                contentDescription = "${app.label}. ${if (isLarge) "Favourite app" else "App"}. Press to open. Long press for options."
+            }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
