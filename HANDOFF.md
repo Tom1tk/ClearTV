@@ -16,29 +16,32 @@ A complete Android TV launcher app to replace the Fire Stick home screen. Writte
 | 2 — Personalisation | `d4b34b7` | DataStore preferences, long-press context menu, Settings screen, dark mode |
 | 3 — Widgets | `1122d2f` | Weather widget (Open-Meteo), Status widget, Screensaver (Dim/Clock/Slideshow) |
 | 4 — Hardening | `ca315fb` | AppInstallReceiver, no-network weather fallback, accessibility, ProGuard, v1.0.0 |
-| **Bug fixes** | `66edc28` `39865fd` `958f46d` | JDK fix, manifest fix, **crash fix** (see below) |
+| **Bug fixes** | `66edc28` `39865fd` `958f46d` `8d96472` `a5d609a` `67939dc` | JDK fix, manifest fix, **crash fix, UI widget bounds fix, UI Polish (Phases 5 & 6)** |
 
-**Latest commit**: `958f46d`
+**Latest commit**: `67939dc`
 
 ---
 
 ## Current State — What Was Happening When We Stopped
 
-The app was crashing on launch in an Android TV emulator (API 36, arm64, 1080p). We:
-1. Debugged via ADB (`/Users/tom7/Library/Android/sdk/platform-tools/adb`)
-2. Found the crash in logcat: **Compose `StackOverflowError`** during measure pass
-3. Fixed and rebuilt. App now launches successfully (confirmed via `adb logcat`)
+The app is functionally complete and all post-release bug fixes from Phases 5 and 6 have been deployed. 
+- Fixed the huge unconstrained `Modifier.weight(1f)` breaking the Home Layout bounds.
+- Fixed Favourites row 16:9 aspect ratio scaling (`width(260.dp)` constant width).
+- Re-architected `AppTile` to remove ghost overlapping text headers during D-pad focus.
+- Wired `is12Hour` and dynamic AM/PM flags into `ClockWidget`.
+- Processed `isSystemApp` via bitmask to accurately toggle the "Show System Apps" visibility logic.
 
-**The fix is committed and pushed (`958f46d`).** The emulator showed zero crashes after the fix.
+The user is logging off for the day and preparing to run a visual confirmation test tomorrow on an Android TV Emulator (4K TV profile, API 36).
 
 ### The Bug That Was Fixed
 1. **Layout crash**: `LazyVerticalGrid` inside `Column + verticalScroll()` — illegal in Compose (lazy layouts can't be inside bounded scroll containers). Fixed by replacing the outer scroll with `LazyColumn` and inner grid with `FlowRow`.
 2. **Invisible Window crash**: `Float.MAX_VALUE` passed to `Brush.linearGradient(end = Offset(Float.MAX_VALUE, ...))` causes native `android.graphics.LinearGradient` to throw `IllegalArgumentException` on some Android versions. Fixed by using Compose-standard `Offset.Infinite`.
 3. **Missing elements**: The `WeatherWidget` had an unconstrained `Modifier.weight(1f)` on its forecast columns, causing it to greedily consume infinite width inside its parent `Row`. This pushed all other elements (Clock, Status, Apps grid) off the screen! Removed the weight constraint.
+4. **AppTile text glitching**: A secondary `Text` overlay inside `Box` was appearing directly on top of the primary text during `isFocused=true` rendering, creating an awful blurred dual-text glitch. Removed the secondary overlay entirely.
+5. **System Apps filter failed**: `ApplicationInfo.FLAG_SYSTEM` was never read during PackageManager querying. Captured via bitmask in `AppRepository` so `HomeViewModel` correctly hides natively baked OS apps when the Settings toggle is disabled.
 
 ### Immediate
-- [ ] **Actually test the emulator visually** — the app launches without crashing, but the user hadn't confirmed the UI was rendering correctly when we ran out of context. Open Android Studio, Run the app, confirm the home screen renders.
-- [ ] **SettingsScreen also uses `Column + verticalScroll`** — this is fine since it has no lazy children, but worth verifying.
+- [ ] **Await User Testing** — The user will boot up a 4K TV Emulator instance and test the UI layout scaling and overall navigation constraints tomorrow.
 
 ### Warnings from last build (non-fatal, but clean up when convenient)
 - `Variable 'hueShift' is never used` — in `ScreensaverOverlay.kt` (Slideshow stub)
