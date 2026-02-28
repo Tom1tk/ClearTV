@@ -1,6 +1,5 @@
 package com.cleartv.ui.settings
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,10 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Switch
@@ -25,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,14 +35,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cleartv.data.model.ScreensaverType
 import com.cleartv.data.model.ThemeMode
 import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
 import com.cleartv.util.IntentUtil
 
 /**
- * Full settings panel — Appearance, Apps, About sections.
- * Navigated to via the ⚙ tile or Menu button.
+ * Full settings panel — Appearance, Screensaver, Apps, Weather, About.
  */
 @Composable
 fun SettingsScreen(
@@ -73,10 +73,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "← Back",
                     style = ClearTVTypography.status,
@@ -95,29 +92,19 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ═══════════════════════════════════════════════════
-            //  APPEARANCE
-            // ═══════════════════════════════════════════════════
+            // ═══ APPEARANCE ═══
             SectionHeader("Appearance")
 
-            // Theme toggle
             SettingsCard {
                 Text("Theme", style = settingsLabel(), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ThemeChip("Light", prefs.theme == ThemeMode.LIGHT) {
-                        viewModel.setTheme(ThemeMode.LIGHT)
-                    }
-                    ThemeChip("Dark", prefs.theme == ThemeMode.DARK) {
-                        viewModel.setTheme(ThemeMode.DARK)
-                    }
-                    ThemeChip("System", prefs.theme == ThemeMode.SYSTEM) {
-                        viewModel.setTheme(ThemeMode.SYSTEM)
-                    }
+                    ThemeChip("Light", prefs.theme == ThemeMode.LIGHT) { viewModel.setTheme(ThemeMode.LIGHT) }
+                    ThemeChip("Dark", prefs.theme == ThemeMode.DARK) { viewModel.setTheme(ThemeMode.DARK) }
+                    ThemeChip("System", prefs.theme == ThemeMode.SYSTEM) { viewModel.setTheme(ThemeMode.SYSTEM) }
                 }
             }
 
-            // Blur intensity
             SettingsCard {
                 Text("Blur Intensity", style = settingsLabel(), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -128,124 +115,146 @@ fun SettingsScreen(
                 }
             }
 
-            // Show clock
             SettingsToggle("Show Clock", prefs.showClock) { viewModel.setShowClock(it) }
-
-            // Show weather
             SettingsToggle("Show Weather Widget", prefs.showWeather) { viewModel.setShowWeather(it) }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ═══════════════════════════════════════════════════
-            //  APPS
-            // ═══════════════════════════════════════════════════
+            // ═══ SCREENSAVER ═══
+            SectionHeader("Screensaver")
+
+            SettingsToggle("Enable Screensaver", prefs.screensaverEnabled) {
+                viewModel.setScreensaverEnabled(it)
+            }
+
+            if (prefs.screensaverEnabled) {
+                SettingsCard {
+                    Text("Idle Timeout", style = settingsLabel(), color = colors.textPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(5, 10, 15, 30, 60).forEach { min ->
+                            ThemeChip(
+                                label = "${min}m",
+                                selected = prefs.screensaverTimeoutMin == min,
+                            ) { viewModel.setScreensaverTimeout(min) }
+                        }
+                    }
+                }
+
+                SettingsCard {
+                    Text("Screensaver Type", style = settingsLabel(), color = colors.textPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ThemeChip("Dim", prefs.screensaverType == ScreensaverType.DIM) {
+                            viewModel.setScreensaverType(ScreensaverType.DIM)
+                        }
+                        ThemeChip("Clock", prefs.screensaverType == ScreensaverType.CLOCK) {
+                            viewModel.setScreensaverType(ScreensaverType.CLOCK)
+                        }
+                        ThemeChip("Slideshow", prefs.screensaverType == ScreensaverType.SLIDESHOW) {
+                            viewModel.setScreensaverType(ScreensaverType.SLIDESHOW)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ═══ WEATHER ═══
+            SectionHeader("Weather")
+
+            SettingsCard {
+                Text("Location", style = settingsLabel(), color = colors.textPrimary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = prefs.weatherLocation.ifEmpty { "Auto (default: London)" },
+                    style = ClearTVTypography.tileLabelSmall,
+                    color = colors.textSecondary,
+                )
+                // In a real app this would open a text input dialog.
+                // For Phase 3, location is set via the DataStore directly.
+            }
+
+            SettingsCard {
+                Text("Units", style = settingsLabel(), color = colors.textPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ThemeChip("°C", prefs.weatherCelsius) { viewModel.setWeatherCelsius(true) }
+                    ThemeChip("°F", !prefs.weatherCelsius) { viewModel.setWeatherCelsius(false) }
+                }
+            }
+
+            SettingsCard {
+                Text("Time Format", style = settingsLabel(), color = colors.textPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ThemeChip("12-hour", prefs.weather12hr) { viewModel.setWeather12hr(true) }
+                    ThemeChip("24-hour", !prefs.weather12hr) { viewModel.setWeather12hr(false) }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ═══ APPS ═══
             SectionHeader("Apps")
 
-            // Manage favourites
             if (favouriteApps.isNotEmpty()) {
                 SettingsCard {
                     Text("Favourites", style = settingsLabel(), color = colors.textPrimary)
                     Spacer(modifier = Modifier.height(8.dp))
                     favouriteApps.forEach { app ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = app.label,
-                                style = ClearTVTypography.status,
-                                color = colors.textPrimary,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = "Remove",
-                                style = ClearTVTypography.tileLabelSmall,
-                                color = colors.focusRing,
-                                modifier = Modifier.clickable {
-                                    viewModel.removeFavourite(app.packageName)
-                                },
-                            )
+                            Text(app.label, style = ClearTVTypography.status, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                            Text("Remove", style = ClearTVTypography.tileLabelSmall, color = colors.focusRing, modifier = Modifier.clickable { viewModel.removeFavourite(app.packageName) })
                         }
                     }
                 }
             }
 
-            // Hidden apps
             if (hiddenApps.isNotEmpty()) {
                 SettingsCard {
                     Text("Hidden Apps", style = settingsLabel(), color = colors.textPrimary)
                     Spacer(modifier = Modifier.height(8.dp))
                     hiddenApps.forEach { app ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = app.label,
-                                style = ClearTVTypography.status,
-                                color = colors.textPrimary,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = "Restore",
-                                style = ClearTVTypography.tileLabelSmall,
-                                color = colors.focusRing,
-                                modifier = Modifier.clickable {
-                                    viewModel.unhideApp(app.packageName)
-                                },
-                            )
+                            Text(app.label, style = ClearTVTypography.status, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                            Text("Restore", style = ClearTVTypography.tileLabelSmall, color = colors.focusRing, modifier = Modifier.clickable { viewModel.unhideApp(app.packageName) })
                         }
                     }
                 }
             }
 
-            // Show system apps
-            SettingsToggle("Show System Apps", prefs.showSystemApps) {
-                viewModel.setShowSystemApps(it)
-            }
+            SettingsToggle("Show System Apps", prefs.showSystemApps) { viewModel.setShowSystemApps(it) }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ═══════════════════════════════════════════════════
-            //  ABOUT & SYSTEM
-            // ═══════════════════════════════════════════════════
+            // ═══ ABOUT & SYSTEM ═══
             SectionHeader("About & System")
 
             SettingsCard {
-                SettingsLink("Open Fire OS Settings") {
-                    context.startActivity(IntentUtil.systemSettings())
-                }
+                SettingsLink("Open Fire OS Settings") { context.startActivity(IntentUtil.systemSettings()) }
                 Spacer(modifier = Modifier.height(8.dp))
-                SettingsLink("Open Display Settings") {
-                    context.startActivity(IntentUtil.displaySettings())
-                }
+                SettingsLink("Open Display Settings") { context.startActivity(IntentUtil.displaySettings()) }
                 Spacer(modifier = Modifier.height(8.dp))
-                SettingsLink("Open Network Settings") {
-                    context.startActivity(IntentUtil.wifiSettings())
-                }
+                SettingsLink("Open Network Settings") { context.startActivity(IntentUtil.wifiSettings()) }
             }
 
             SettingsCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("App Version", style = settingsLabel(), color = colors.textPrimary)
-                    Text("0.2.0", style = ClearTVTypography.status, color = colors.textSecondary)
+                    Text("0.3.0", style = ClearTVTypography.status, color = colors.textSecondary)
                 }
             }
 
             SettingsCard {
-                Text(
-                    text = "Restore Defaults",
-                    style = settingsLabel(),
-                    color = colors.focusRing,
-                    modifier = Modifier.clickable { viewModel.restoreDefaults() },
-                )
+                Text("Restore Defaults", style = settingsLabel(), color = colors.focusRing,
+                    modifier = Modifier.clickable { viewModel.restoreDefaults() })
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -253,110 +262,58 @@ fun SettingsScreen(
     }
 }
 
-// ─── Reusable settings components ────────────────────────────────────────────
+// ─── Reusable components ─────────────────────────────────────────────────────
 
 @Composable
 private fun SectionHeader(title: String) {
     val colors = LocalClearTVColors.current
-    Text(
-        text = title.uppercase(),
-        style = ClearTVTypography.sectionHeader,
-        color = colors.textSecondary,
-        modifier = Modifier.padding(bottom = 10.dp),
-    )
+    Text(title.uppercase(), style = ClearTVTypography.sectionHeader, color = colors.textSecondary,
+        modifier = Modifier.padding(bottom = 10.dp))
 }
 
 @Composable
-private fun SettingsCard(
-    content: @Composable () -> Unit,
-) {
+private fun SettingsCard(content: @Composable () -> Unit) {
     val colors = LocalClearTVColors.current
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 10.dp)
+        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(colors.surface)
             .border(1.dp, colors.surfaceBorder, RoundedCornerShape(16.dp))
             .padding(16.dp),
-    ) {
-        Column { content() }
-    }
+    ) { Column { content() } }
 }
 
 @Composable
-private fun SettingsToggle(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
+private fun SettingsToggle(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     val colors = LocalClearTVColors.current
     SettingsCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = settingsLabel(), color = colors.textPrimary)
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = colors.focusRing,
-                    checkedTrackColor = colors.focusRing.copy(alpha = 0.3f),
-                ),
-            )
+            Switch(checked = checked, onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(checkedThumbColor = colors.focusRing, checkedTrackColor = colors.focusRing.copy(alpha = 0.3f)))
         }
     }
 }
 
 @Composable
-private fun ThemeChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
+private fun ThemeChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = LocalClearTVColors.current
-    Text(
-        text = label,
-        fontSize = 12.sp,
+    Text(label, fontSize = 12.sp,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         color = if (selected) colors.focusRing else colors.textSecondary,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (selected) colors.focusRing.copy(alpha = 0.12f)
-                else colors.surface
-            )
-            .border(
-                1.dp,
-                if (selected) colors.focusRing.copy(alpha = 0.3f)
-                else colors.surfaceBorder,
-                RoundedCornerShape(12.dp),
-            )
+        modifier = Modifier.clip(RoundedCornerShape(12.dp))
+            .background(if (selected) colors.focusRing.copy(alpha = 0.12f) else colors.surface)
+            .border(1.dp, if (selected) colors.focusRing.copy(alpha = 0.3f) else colors.surfaceBorder, RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+            .padding(horizontal = 16.dp, vertical = 8.dp))
 }
 
 @Composable
-private fun SettingsLink(
-    label: String,
-    onClick: () -> Unit,
-) {
+private fun SettingsLink(label: String, onClick: () -> Unit) {
     val colors = LocalClearTVColors.current
-    Text(
-        text = label,
-        style = settingsLabel(),
-        color = colors.focusRing,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 4.dp),
-    )
+    Text(label, style = settingsLabel(), color = colors.focusRing,
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 4.dp))
 }
 
 @Composable
-private fun settingsLabel() = ClearTVTypography.status.copy(
-    fontWeight = FontWeight.Medium,
-)
+private fun settingsLabel() = ClearTVTypography.status.copy(fontWeight = FontWeight.Medium)

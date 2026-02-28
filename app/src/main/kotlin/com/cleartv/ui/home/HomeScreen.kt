@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,15 +30,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cleartv.data.model.AppInfo
-import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
 import com.cleartv.ui.widgets.ClockWidget
+import com.cleartv.ui.widgets.StatusWidget
+import com.cleartv.ui.widgets.WeatherWidget
 import com.cleartv.util.IntentUtil
 
 /**
  * Root composable for the ClearTV home screen.
- * Assembles background, clock, status, favourites, apps grid,
- * and the context menu overlay.
  */
 @Composable
 fun HomeScreen(
@@ -55,6 +52,8 @@ fun HomeScreen(
     val preferences by viewModel.preferences.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val contextMenuApp by viewModel.contextMenuApp.collectAsState()
+    val weather by viewModel.weather.collectAsState()
+    val weatherLocationName by viewModel.weatherLocationName.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Background gradient
@@ -106,21 +105,28 @@ fun HomeScreen(
                     CircularProgressIndicator(color = colors.textSecondary)
                 }
             } else {
-                // Main content
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 52.dp, vertical = 32.dp)
                         .verticalScroll(rememberScrollState()),
                 ) {
-                    // ── Top bar: Clock + Status ──
+                    // ── Top bar ──
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Top,
                     ) {
-                        // Left — placeholder for weather (Phase 3)
-                        Spacer(modifier = Modifier.weight(1f))
+                        // Left — Weather widget
+                        if (preferences.showWeather) {
+                            WeatherWidget(
+                                weather = weather,
+                                locationName = weatherLocationName,
+                                useCelsius = preferences.weatherCelsius,
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
 
                         // Right — Clock + Status
                         Column(horizontalAlignment = Alignment.End) {
@@ -128,13 +134,17 @@ fun HomeScreen(
                                 ClockWidget()
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
-                            StatusStrip()
+                            StatusWidget(
+                                onClick = {
+                                    context.startActivity(IntentUtil.systemSettings())
+                                },
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // ── Favourites row ──
+                    // ── Favourites ──
                     FavouritesRow(
                         favourites = favourites,
                         onAppClick = { app -> launchApp(context, viewModel, app) },
@@ -169,41 +179,6 @@ fun HomeScreen(
                 onHideApp = { viewModel.hideApp(contextMenuApp!!.packageName) },
             )
         }
-    }
-}
-
-/**
- * Status strip — WiFi signal + device name.
- */
-@Composable
-private fun StatusStrip() {
-    val colors = LocalClearTVColors.current
-
-    Row(
-        modifier = Modifier
-            .background(
-                color = colors.statusSurface,
-                shape = RoundedCornerShape(20.dp),
-            )
-            .padding(horizontal = 14.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = "WiFi ▸ Strong",
-            style = ClearTVTypography.status,
-            color = colors.statusText,
-        )
-        Text(
-            text = "|",
-            style = ClearTVTypography.status,
-            color = colors.statusText.copy(alpha = 0.3f),
-        )
-        Text(
-            text = android.os.Build.MODEL,
-            style = ClearTVTypography.status,
-            color = colors.statusText,
-        )
     }
 }
 
