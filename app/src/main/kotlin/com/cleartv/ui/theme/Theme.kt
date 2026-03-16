@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.cleartv.data.model.AccentColor
 
 /**
  * ClearTV colour tokens — provided via CompositionLocal so any
@@ -18,6 +19,8 @@ data class ClearTVColors(
     val backgroundEnd: Color,
     val surface: Color,
     val surfaceBorder: Color,
+    val glassSurface: Color,
+    val glassBorder: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val textTertiary: Color,
@@ -31,78 +34,74 @@ data class ClearTVColors(
     val settingsTileFg: Color,
     val blobBlue: Color,
     val blobGreen: Color,
+    val accent: Color,          // pure accent (for swatches, links, etc.)
 )
 
 val LocalClearTVColors = staticCompositionLocalOf {
-    ClearTVColors(
-        background = LightColors.background,
-        backgroundEnd = LightColors.backgroundEnd,
-        surface = LightColors.surface,
-        surfaceBorder = LightColors.surfaceBorder,
-        textPrimary = LightColors.textPrimary,
-        textSecondary = LightColors.textSecondary,
-        textTertiary = LightColors.textTertiary,
-        focusRing = LightColors.focusRing,
-        labelOverlay = LightColors.labelOverlay,
-        labelText = LightColors.labelText,
-        statusSurface = LightColors.statusSurface,
-        statusBorder = LightColors.statusBorder,
-        statusText = LightColors.statusText,
-        settingsTileBg = LightColors.settingsTileBg,
-        settingsTileFg = LightColors.settingsTileFg,
-        blobBlue = LightColors.blobBlue,
-        blobGreen = LightColors.blobGreen,
-    )
+    buildPalette(darkTheme = false, accent = AccentColor.BLUE)
 }
 
-private val LightPalette = ClearTVColors(
-    background = LightColors.background,
-    backgroundEnd = LightColors.backgroundEnd,
-    surface = LightColors.surface,
-    surfaceBorder = LightColors.surfaceBorder,
-    textPrimary = LightColors.textPrimary,
-    textSecondary = LightColors.textSecondary,
-    textTertiary = LightColors.textTertiary,
-    focusRing = LightColors.focusRing,
-    labelOverlay = LightColors.labelOverlay,
-    labelText = LightColors.labelText,
-    statusSurface = LightColors.statusSurface,
-    statusBorder = LightColors.statusBorder,
-    statusText = LightColors.statusText,
-    settingsTileBg = LightColors.settingsTileBg,
-    settingsTileFg = LightColors.settingsTileFg,
-    blobBlue = LightColors.blobBlue,
-    blobGreen = LightColors.blobGreen,
-)
-
-private val DarkPalette = ClearTVColors(
-    background = DarkColors.background,
-    backgroundEnd = DarkColors.backgroundEnd,
-    surface = DarkColors.surface,
-    surfaceBorder = DarkColors.surfaceBorder,
-    textPrimary = DarkColors.textPrimary,
-    textSecondary = DarkColors.textSecondary,
-    textTertiary = DarkColors.textTertiary,
-    focusRing = DarkColors.focusRing,
-    labelOverlay = DarkColors.labelOverlay,
-    labelText = DarkColors.labelText,
-    statusSurface = DarkColors.statusSurface,
-    statusBorder = DarkColors.statusBorder,
-    statusText = DarkColors.statusText,
-    settingsTileBg = DarkColors.settingsTileBg,
-    settingsTileFg = DarkColors.settingsTileFg,
-    blobBlue = DarkColors.blobBlue,
-    blobGreen = DarkColors.blobGreen,
-)
+private fun buildPalette(darkTheme: Boolean, accent: AccentColor): ClearTVColors {
+    val focusRing = accentFocusRing(accent)
+    val blobBlue = accentBlobColor(accent)
+    val accentPure = accentPureColor(accent)
+    return if (darkTheme) {
+        ClearTVColors(
+            background = DarkColors.background,
+            backgroundEnd = DarkColors.backgroundEnd,
+            surface = DarkColors.surface,
+            surfaceBorder = DarkColors.surfaceBorder,
+            glassSurface = DarkColors.glassSurface,
+            glassBorder = DarkColors.glassBorder,
+            textPrimary = DarkColors.textPrimary,
+            textSecondary = DarkColors.textSecondary,
+            textTertiary = DarkColors.textTertiary,
+            focusRing = focusRing,
+            labelOverlay = DarkColors.labelOverlay,
+            labelText = DarkColors.labelText,
+            statusSurface = DarkColors.statusSurface,
+            statusBorder = DarkColors.statusBorder,
+            statusText = DarkColors.statusText,
+            settingsTileBg = DarkColors.settingsTileBg,
+            settingsTileFg = DarkColors.settingsTileFg,
+            blobBlue = blobBlue,
+            blobGreen = DarkColors.blobGreen,
+            accent = accentPure,
+        )
+    } else {
+        ClearTVColors(
+            background = LightColors.background,
+            backgroundEnd = LightColors.backgroundEnd,
+            surface = LightColors.surface,
+            surfaceBorder = LightColors.surfaceBorder,
+            glassSurface = LightColors.glassSurface,
+            glassBorder = LightColors.glassBorder,
+            textPrimary = LightColors.textPrimary,
+            textSecondary = LightColors.textSecondary,
+            textTertiary = LightColors.textTertiary,
+            focusRing = focusRing,
+            labelOverlay = LightColors.labelOverlay,
+            labelText = LightColors.labelText,
+            statusSurface = LightColors.statusSurface,
+            statusBorder = LightColors.statusBorder,
+            statusText = LightColors.statusText,
+            settingsTileBg = LightColors.settingsTileBg,
+            settingsTileFg = LightColors.settingsTileFg,
+            blobBlue = blobBlue,
+            blobGreen = LightColors.blobGreen,
+            accent = accentPure,
+        )
+    }
+}
 
 @Composable
 fun ClearTVTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    accentColor: AccentColor = AccentColor.BLUE,
+    content: @Composable () -> Unit,
 ) {
-    val colors = if (darkTheme) DarkPalette else LightPalette
+    val colors = buildPalette(darkTheme, accentColor)
 
-    // Also provide Material3 color scheme for any M3 components used
     val materialScheme = if (darkTheme) {
         darkColorScheme(
             background = colors.background,

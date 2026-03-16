@@ -2,6 +2,7 @@ package com.cleartv.ui.home
 
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -35,7 +39,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cleartv.data.model.AppInfo
@@ -45,6 +51,8 @@ import com.cleartv.ui.widgets.ClockWidget
 import com.cleartv.ui.widgets.StatusWidget
 import com.cleartv.ui.widgets.WeatherWidget
 import com.cleartv.util.IntentUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -75,25 +83,56 @@ fun HomeScreen(
     val contextMenuApp by viewModel.contextMenuApp.collectAsState()
     val weather by viewModel.weather.collectAsState()
     val weatherLocationName by viewModel.weatherLocationName.collectAsState()
+    val launchingApp by viewModel.launchingApp.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Background gradient
+    // Dismiss launch overlay on Back press
+    BackHandler(enabled = launchingApp != null) {
+        viewModel.setLaunchingApp(null)
+    }
+
+    // Track screen size for the 160° gradient
+    var screenSize by remember { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { screenSize = it },
+    ) {
+        // Background gradient — 160° (near-vertical, slight left→right tilt)
+        val gradientStart = if (screenSize.width > 0) {
+            Offset(
+                screenSize.width * 0.5f - screenSize.width * 0.171f,
+                0f,
+            )
+        } else {
+            Offset(0f, 0f)
+        }
+        val gradientEnd = if (screenSize.width > 0) {
+            Offset(
+                screenSize.width * 0.5f + screenSize.width * 0.171f,
+                screenSize.height.toFloat(),
+            )
+        } else {
+            Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(colors.background, colors.backgroundEnd),
-                        start = Offset(0f, 0f),
-                        end = Offset.Infinite,
+                        start = gradientStart,
+                        end = gradientEnd,
                     )
                 )
         ) {
-            // Decorative blobs
+            // Blue blob — top-right corner, partially off-screen
             Box(
                 modifier = Modifier
                     .size(480.dp)
-                    .offset(x = 200.dp, y = (-120).dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 60.dp, y = (-120).dp)
                     .drawBehind {
                         drawCircle(
                             brush = Brush.radialGradient(listOf(colors.blobBlue, Color.Transparent)),
@@ -101,6 +140,7 @@ fun HomeScreen(
                         )
                     }
             )
+            // Green blob — bottom-left
             Box(
                 modifier = Modifier
                     .size(360.dp)
@@ -168,7 +208,7 @@ fun HomeScreen(
                     item {
                         FavouritesSection(
                             favourites = favourites,
-                            onAppClick = { launchApp(context, viewModel, it) },
+                            onAppClick = { launchApp(context, viewModel, it, scope) },
                             onAppLongClick = { viewModel.showContextMenu(it) },
                             onFocusEntered = {
                                 scope.launch { listState.animateScrollToItem(0) }
@@ -189,7 +229,7 @@ fun HomeScreen(
                     item {
                         AppsFlowGrid(
                             apps = gridApps,
-                            onAppClick = { launchApp(context, viewModel, it) },
+                            onAppClick = { launchApp(context, viewModel, it, scope) },
                             onAppLongClick = { viewModel.showContextMenu(it) },
                             onSettingsClick = onNavigateToSettings,
                         )
@@ -207,6 +247,14 @@ fun HomeScreen(
                 onDismiss = { viewModel.dismissContextMenu() },
                 onToggleFavourite = { viewModel.toggleFavourite(contextMenuApp!!.packageName) },
                 onHideApp = { viewModel.hideApp(contextMenuApp!!.packageName) },
+            )
+        }
+
+        // Launch overlay
+        if (launchingApp != null) {
+            LaunchOverlay(
+                app = launchingApp!!,
+                onDismiss = { viewModel.setLaunchingApp(null) },
             )
         }
     }
@@ -243,9 +291,11 @@ private fun FavouritesSection(
                 modifier = Modifier.padding(vertical = 24.dp),
             )
         } else {
+            // vertical contentPadding gives tiles room to scale + show outer ring
+            // without being clipped at the LazyRow viewport boundary
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
             ) {
                 items(favourites, key = { it.packageName }) { app ->
                     AppTile(
@@ -301,10 +351,20 @@ private fun AppsFlowGrid(
     }
 }
 
-private fun launchApp(context: Context, viewModel: HomeViewModel, app: AppInfo) {
-    val intent = viewModel.getLaunchIntent(app)
-    if (intent != null) {
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+private fun launchApp(
+    context: Context,
+    viewModel: HomeViewModel,
+    app: AppInfo,
+    scope: CoroutineScope,
+) {
+    scope.launch {
+        viewModel.setLaunchingApp(app)
+        delay(200)
+        val intent = viewModel.getLaunchIntent(app)
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+        viewModel.setLaunchingApp(null)
     }
 }

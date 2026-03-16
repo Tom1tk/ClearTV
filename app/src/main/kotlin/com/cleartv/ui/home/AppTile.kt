@@ -2,6 +2,7 @@ package com.cleartv.ui.home
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,13 +37,18 @@ import coil.compose.AsyncImage
 import com.cleartv.data.model.AppInfo
 import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
+import com.cleartv.ui.util.outerFocusRing
+import com.cleartv.ui.util.tileFocusedShadow
+import com.cleartv.ui.util.tileRestingShadow
+import androidx.compose.ui.graphics.Color
 
 /**
  * Reusable app tile composable for both the Favourites row (16:9) and
  * the Apps grid (1:1). Implements the frosted glass card aesthetic,
- * focus ring, scale animation, and label overlay from the spec.
+ * outer focus ring, scale animation with spring bounce, and label bar
+ * overlay from the spec.
  *
- * Supports long-press for context menu (Phase 2).
+ * Supports long-press for context menu.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -56,14 +62,21 @@ fun AppTile(
     val colors = LocalClearTVColors.current
     var isFocused by remember { mutableStateOf(false) }
 
-    // Scale animation: 1.07× on focus with spring physics
+    // Scale animation: 1.06× on focus with bouncy spring (ζ=0.65 → ~7% overshoot)
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.06f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.85f,
-            stiffness = 400f,
+            dampingRatio = 0.65f,
+            stiffness = 380f,
         ),
         label = "tileScale",
+    )
+
+    // Label bar fade
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 1f else 0f,
+        animationSpec = tween(150),
+        label = "labelAlpha",
     )
 
     val cornerRadius = if (isLarge) 20.dp else 16.dp
@@ -77,11 +90,17 @@ fun AppTile(
                 scaleX = scale
                 scaleY = scale
             }
+            // Focus ring + shadow drawn BEFORE clip so they render outside the clipped area
+            .then(
+                if (isFocused) Modifier.outerFocusRing(colors.focusRing, cornerRadius = cornerRadius)
+                else Modifier
+            )
+            .then(
+                if (isFocused) Modifier.tileFocusedShadow(cornerRadius)
+                else Modifier.tileRestingShadow(cornerRadius)
+            )
             .clip(shape)
             .background(colors.surface)
-            .then(
-                if (isFocused) Modifier.border(2.dp, colors.focusRing, shape) else Modifier
-            )
             .onFocusChanged { isFocused = it.isFocused }
             .semantics {
                 contentDescription = "${app.label}. ${if (isLarge) "Favourite app" else "App"}. Press to open. Long press for options."
@@ -92,31 +111,38 @@ fun AppTile(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        // App icon + label
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            AsyncImage(
-                model = app.icon,
-                contentDescription = app.label,
-                modifier = Modifier
-                    .size(if (isLarge) 64.dp else 48.dp)
-                    .clip(RoundedCornerShape(if (isLarge) 16.dp else 12.dp)),
-                contentScale = ContentScale.Fit,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+        // App icon — centered in tile
+        AsyncImage(
+            model = app.icon,
+            contentDescription = app.label,
+            modifier = Modifier
+                .size(if (isLarge) 64.dp else 48.dp)
+                .clip(RoundedCornerShape(if (isLarge) 16.dp else 12.dp)),
+            contentScale = ContentScale.Fit,
+        )
+
+        // Label bar — fades in at bottom on focus
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .graphicsLayer { alpha = labelAlpha }
+                .background(colors.labelOverlay)
+                .padding(
+                    horizontal = if (isLarge) 10.dp else 6.dp,
+                    vertical = if (isLarge) 6.dp else 4.dp,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
             Text(
                 text = app.label,
                 style = if (isLarge) ClearTVTypography.tileLabel else ClearTVTypography.tileLabelSmall,
-                color = colors.textPrimary,
+                color = colors.labelText,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
             )
         }
-
-        // No extra label overlay on focus. The scale and border are enough.
     }
 }
 
@@ -134,7 +160,7 @@ fun SettingsTile(
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 380f),
         label = "settingsScale",
     )
 
@@ -147,11 +173,16 @@ fun SettingsTile(
                 scaleX = scale
                 scaleY = scale
             }
+            .then(
+                if (isFocused) Modifier.outerFocusRing(colors.focusRing, cornerRadius = 16.dp)
+                else Modifier
+            )
+            .then(
+                if (isFocused) Modifier.tileFocusedShadow(16.dp)
+                else Modifier.tileRestingShadow(16.dp)
+            )
             .clip(shape)
             .background(colors.settingsTileBg)
-            .then(
-                if (isFocused) Modifier.border(2.dp, colors.focusRing, shape) else Modifier
-            )
             .onFocusChanged { isFocused = it.isFocused }
             .combinedClickable(onClick = onClick),
         contentAlignment = Alignment.Center,

@@ -5,12 +5,15 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -29,6 +32,8 @@ import com.cleartv.ui.screensaver.ScreensaverOverlay
 import com.cleartv.ui.screensaver.ScreensaverViewModel
 import com.cleartv.ui.settings.SettingsScreen
 import com.cleartv.ui.theme.ClearTVTheme
+import com.cleartv.util.SunriseSunset
+import kotlinx.coroutines.delay
 
 /**
  * Single Activity for ClearTV.
@@ -73,13 +78,31 @@ class MainActivity : ComponentActivity() {
                 initial = UserPreferences()
             )
 
+            // Ticker that recomposes every minute — drives the AUTO sunrise/sunset check
+            var ticker by remember { mutableLongStateOf(System.currentTimeMillis()) }
+            LaunchedEffect(preferences.theme) {
+                if (preferences.theme == ThemeMode.AUTO) {
+                    while (true) {
+                        delay(60_000L)
+                        ticker = System.currentTimeMillis()
+                    }
+                }
+            }
+
+            @Suppress("UNUSED_EXPRESSION")
             val isDark = when (preferences.theme) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.AUTO -> {
+                    ticker // read to trigger recomposition on minute tick
+                    SunriseSunset.isNight(preferences.locationLat, preferences.locationLon)
+                }
             }
 
-            ClearTVTheme(darkTheme = isDark) {
+            ClearTVTheme(
+                darkTheme = isDark,
+                accentColor = preferences.accentColor,
+            ) {
                 ClearTVApp(
                     screensaverViewModel = screensaverViewModel,
                     homeViewModel = homeViewModel,

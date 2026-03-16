@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Switch
@@ -35,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -43,10 +46,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cleartv.data.model.AccentColor
 import com.cleartv.data.model.ScreensaverType
 import com.cleartv.data.model.ThemeMode
 import com.cleartv.ui.theme.ClearTVTypography
 import com.cleartv.ui.theme.LocalClearTVColors
+import com.cleartv.ui.theme.accentPureColor
 import com.cleartv.util.IntentUtil
 import kotlinx.coroutines.launch
 
@@ -86,7 +91,7 @@ fun SettingsScreen(
                 Text(
                     text = "← Back",
                     style = ClearTVTypography.status,
-                    color = colors.focusRing,
+                    color = colors.accent,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { onNavigateBack() }
@@ -107,13 +112,35 @@ fun SettingsScreen(
             // ═══ APPEARANCE ═══
             SectionHeader("Appearance")
 
+            // Light / Dark / Auto
             SettingsCard {
-                Text("Theme", style = settingsLabel(), color = colors.textPrimary)
+                Text("Brightness", style = settingsLabel(), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ThemeChip("Light", prefs.theme == ThemeMode.LIGHT) { viewModel.setTheme(ThemeMode.LIGHT) }
                     ThemeChip("Dark", prefs.theme == ThemeMode.DARK) { viewModel.setTheme(ThemeMode.DARK) }
-                    ThemeChip("System", prefs.theme == ThemeMode.SYSTEM) { viewModel.setTheme(ThemeMode.SYSTEM) }
+                    ThemeChip("Auto", prefs.theme == ThemeMode.AUTO) { viewModel.setTheme(ThemeMode.AUTO) }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Auto follows local sunrise and sunset",
+                    style = ClearTVTypography.tileLabelSmall,
+                    color = colors.textSecondary,
+                )
+            }
+
+            // Accent Color
+            SettingsCard {
+                Text("Accent Colour", style = settingsLabel(), color = colors.textPrimary)
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AccentColor.entries.forEach { accent ->
+                        AccentSwatch(
+                            accent = accent,
+                            selected = prefs.accentColor == accent,
+                            onClick = { viewModel.setAccentColor(accent) },
+                        )
+                    }
                 }
             }
 
@@ -226,7 +253,7 @@ fun SettingsScreen(
                             Text(
                                 "Remove",
                                 style = ClearTVTypography.tileLabelSmall,
-                                color = colors.focusRing,
+                                color = colors.accent,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
                                     .clickable { viewModel.removeFavourite(app.packageName) }
@@ -255,7 +282,7 @@ fun SettingsScreen(
                             Text(
                                 "Restore",
                                 style = ClearTVTypography.tileLabelSmall,
-                                color = colors.focusRing,
+                                color = colors.accent,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
                                     .clickable { viewModel.unhideApp(app.packageName) }
@@ -295,7 +322,7 @@ fun SettingsScreen(
                 Text(
                     "Restore Defaults",
                     style = settingsLabel(),
-                    color = colors.focusRing,
+                    color = colors.accent,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable { viewModel.restoreDefaults() }
@@ -384,14 +411,18 @@ private fun SettingsToggle(label: String, checked: Boolean, onCheckedChange: (Bo
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = colors.focusRing,
-                    checkedTrackColor = colors.focusRing.copy(alpha = 0.3f),
+                    checkedThumbColor = colors.accent,
+                    checkedTrackColor = colors.accent.copy(alpha = 0.3f),
                 ),
             )
         }
     }
 }
 
+/**
+ * Text chip for selecting one option from a group (e.g. Light / Dark / Auto).
+ * Selected state uses the accent color with enough contrast in both light and dark modes.
+ */
 @Composable
 private fun ThemeChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = LocalClearTVColors.current
@@ -399,19 +430,71 @@ private fun ThemeChip(label: String, selected: Boolean, onClick: () -> Unit) {
         label,
         fontSize = 12.sp,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        color = if (selected) colors.focusRing else colors.textSecondary,
+        color = if (selected) colors.accent else colors.textSecondary,
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) colors.focusRing.copy(alpha = 0.12f) else colors.surface)
-            .border(1.dp, if (selected) colors.focusRing.copy(alpha = 0.3f) else colors.surfaceBorder, RoundedCornerShape(12.dp))
+            .background(if (selected) colors.accent.copy(alpha = 0.18f) else colors.surface)
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) colors.accent.copy(alpha = 0.6f) else colors.surfaceBorder,
+                shape = RoundedCornerShape(12.dp),
+            )
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
 /**
+ * Circular color swatch for the accent color picker.
+ * Shows the pure accent color; selected state adds an outer ring.
+ */
+@Composable
+private fun AccentSwatch(
+    accent: AccentColor,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = accentPureColor(accent)
+    val label = accent.name.lowercase().replaceFirstChar { it.uppercaseChar() }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(color.copy(alpha = if (selected) 1f else 0.55f))
+                .border(
+                    width = if (selected) 2.5.dp else 1.dp,
+                    color = if (selected) color else color.copy(alpha = 0.4f),
+                    shape = CircleShape,
+                )
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                // White checkmark dot
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                )
+            }
+        }
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            color = if (selected) color else LocalClearTVColors.current.textSecondary,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        )
+    }
+}
+
+/**
  * A tappable/focusable link row inside a SettingsCard.
- * clip() before clickable() ensures the focus ripple is rounded.
  */
 @Composable
 private fun SettingsLink(label: String, onClick: () -> Unit) {
@@ -419,7 +502,7 @@ private fun SettingsLink(label: String, onClick: () -> Unit) {
     Text(
         label,
         style = settingsLabel(),
-        color = colors.focusRing,
+        color = colors.accent,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.cleartv.data.AppRepository
 import com.cleartv.data.PreferencesRepo
+import com.cleartv.data.model.AccentColor
 import com.cleartv.data.model.AppInfo
 import com.cleartv.data.model.ScreensaverType
 import com.cleartv.data.model.ThemeMode
@@ -44,6 +45,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     // Appearance
     fun setTheme(theme: ThemeMode) { viewModelScope.launch { preferencesRepo.setTheme(theme) } }
+    fun setAccentColor(accent: AccentColor) { viewModelScope.launch { preferencesRepo.setAccentColor(accent) } }
     fun setBlurIntensity(level: Int) { viewModelScope.launch { preferencesRepo.setBlurIntensity(level) } }
     fun setShowClock(show: Boolean) { viewModelScope.launch { preferencesRepo.setShowClock(show) } }
     fun setShowWeather(show: Boolean) { viewModelScope.launch { preferencesRepo.setShowWeather(show) } }

@@ -36,6 +36,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // Launch overlay
+    private val _launchingApp = MutableStateFlow<AppInfo?>(null)
+    val launchingApp: StateFlow<AppInfo?> = _launchingApp.asStateFlow()
+
+    fun setLaunchingApp(app: AppInfo?) { _launchingApp.value = app }
+
     // Context menu
     private val _contextMenuApp = MutableStateFlow<AppInfo?>(null)
     val contextMenuApp: StateFlow<AppInfo?> = _contextMenuApp.asStateFlow()
@@ -117,13 +123,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val (lat, lon, name) = if (location.isNotEmpty()) {
             val geo = weatherRepository.geocode(location).getOrNull()
             if (geo != null) {
+                // Cache coords for Auto (sunrise/sunset) mode
+                preferencesRepo.setLocationCoords(geo.latitude, geo.longitude)
                 Triple(geo.latitude, geo.longitude, geo.name)
             } else {
-                // Fallback: London
                 Triple(51.5074, -0.1278, "London")
             }
         } else {
-            // Default: London (IP-based geolocation would go here)
             Triple(51.5074, -0.1278, "London")
         }
 

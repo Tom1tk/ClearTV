@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.cleartv.data.model.AccentColor
 import com.cleartv.data.model.ThemeMode
 import com.cleartv.data.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
@@ -60,6 +61,9 @@ class PreferencesRepo(private val context: Context) {
     // ── Convenience methods ──────────────────────────────────────────────────
 
     suspend fun setTheme(theme: ThemeMode) = update { it.copy(theme = theme) }
+    suspend fun setAccentColor(accent: AccentColor) = update { it.copy(accentColor = accent) }
+    suspend fun setLocationCoords(lat: Double, lon: Double) =
+        update { it.copy(locationLat = lat, locationLon = lon) }
 
     suspend fun toggleFavourite(packageName: String) = update { prefs ->
         val favs = prefs.favouritePackages.toMutableList()
