@@ -7,7 +7,7 @@ object LightColors {
     val background = Color(0xFFF2F2F7)
     val backgroundEnd = Color(0xFFE8E8ED)
     val surface = Color(0x8CFFFFFF)          // rgba(255,255,255,0.55)
-    val surfaceBorder = Color(0xCCFFFFFF)    // rgba(255,255,255,0.8)
+    val surfaceBorder = Color(0x40FFFFFF)    // rgba(255,255,255,0.25)
     val textPrimary = Color(0xFF1C1C1E)
     val textSecondary = Color(0xFF8E8E93)
     val textTertiary = Color(0xFF636366)

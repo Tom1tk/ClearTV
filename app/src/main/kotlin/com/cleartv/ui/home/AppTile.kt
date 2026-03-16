@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -59,15 +58,14 @@ fun AppTile(
 
     // Scale animation: 1.07× on focus with spring physics
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.07f else 1f,
+        targetValue = if (isFocused) 1.06f else 1f,
         animationSpec = spring(
-            dampingRatio = 0.55f,
+            dampingRatio = 0.85f,
             stiffness = 400f,
         ),
         label = "tileScale",
     )
 
-    val elevation = if (isFocused) 12.dp else 2.dp
     val cornerRadius = if (isLarge) 20.dp else 16.dp
     val shape = RoundedCornerShape(cornerRadius)
     val aspectRatio = if (isLarge) 16f / 9f else 1f
@@ -79,15 +77,10 @@ fun AppTile(
                 scaleX = scale
                 scaleY = scale
             }
-            .shadow(elevation, shape)
             .clip(shape)
             .background(colors.surface)
             .then(
-                if (isFocused) {
-                    Modifier.border(3.dp, colors.focusRing, shape)
-                } else {
-                    Modifier.border(1.dp, colors.surfaceBorder, shape)
-                }
+                if (isFocused) Modifier.border(2.dp, colors.focusRing, shape) else Modifier
             )
             .onFocusChanged { isFocused = it.isFocused }
             .semantics {
@@ -140,8 +133,8 @@ fun SettingsTile(
     var isFocused by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.07f else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 400f),
+        targetValue = if (isFocused) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
         label = "settingsScale",
     )
 
@@ -154,15 +147,10 @@ fun SettingsTile(
                 scaleX = scale
                 scaleY = scale
             }
-            .shadow(if (isFocused) 12.dp else 2.dp, shape)
             .clip(shape)
             .background(colors.settingsTileBg)
             .then(
-                if (isFocused) {
-                    Modifier.border(3.dp, colors.focusRing, shape)
-                } else {
-                    Modifier.border(1.dp, colors.surfaceBorder, shape)
-                }
+                if (isFocused) Modifier.border(2.dp, colors.focusRing, shape) else Modifier
             )
             .onFocusChanged { isFocused = it.isFocused }
             .combinedClickable(onClick = onClick),

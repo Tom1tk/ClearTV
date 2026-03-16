@@ -21,14 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -42,13 +45,18 @@ import com.cleartv.ui.widgets.ClockWidget
 import com.cleartv.ui.widgets.StatusWidget
 import com.cleartv.ui.widgets.WeatherWidget
 import com.cleartv.util.IntentUtil
+import kotlinx.coroutines.launch
 
 /**
  * Root composable for the ClearTV home screen.
  *
- * Uses a single LazyColumn as the root scroll container.
- * AppsGrid uses FlowRow (non-lazy) to avoid the Compose
- * "nested lazy layout" crash (StackOverflow in measure pass).
+ * Single LazyColumn owns all scrolling (avoids nested lazy crash).
+ * FlowRow is used for the apps grid (non-lazy, safe inside LazyColumn).
+ *
+ * TV scroll behaviour: when D-pad focus returns to the Favourites section
+ * (the topmost interactive zone), the list automatically animates back to
+ * item 0, keeping weather and clock fully visible. Favourites are the
+ * highest focusable elements on the screen.
  */
 @Composable
 fun HomeScreen(
@@ -57,6 +65,8 @@ fun HomeScreen(
 ) {
     val colors = LocalClearTVColors.current
     val context = LocalContext.current
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     val visibleApps by viewModel.visibleApps.collectAsState()
     val favourites by viewModel.favourites.collectAsState()
@@ -86,9 +96,7 @@ fun HomeScreen(
                     .offset(x = 200.dp, y = (-120).dp)
                     .drawBehind {
                         drawCircle(
-                            brush = Brush.radialGradient(
-                                listOf(colors.blobBlue, Color.Transparent)
-                            ),
+                            brush = Brush.radialGradient(listOf(colors.blobBlue, Color.Transparent)),
                             radius = size.minDimension / 2,
                         )
                     }
@@ -100,9 +108,7 @@ fun HomeScreen(
                     .offset(x = 80.dp, y = 80.dp)
                     .drawBehind {
                         drawCircle(
-                            brush = Brush.radialGradient(
-                                listOf(colors.blobGreen, Color.Transparent)
-                            ),
+                            brush = Brush.radialGradient(listOf(colors.blobGreen, Color.Transparent)),
                             radius = size.minDimension / 2,
                         )
                     }
@@ -117,18 +123,20 @@ fun HomeScreen(
                     favourites.none { fav -> fav.packageName == app.packageName }
                 }
 
-                // Single LazyColumn owns all scrolling — avoids nested scroll crash
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 52.dp),
-                    contentPadding = PaddingValues(vertical = 32.dp),
+                    contentPadding = PaddingValues(bottom = 40.dp),
                     verticalArrangement = Arrangement.spacedBy(28.dp),
                 ) {
-                    // ── Top bar: Weather + Clock + Status ──
+                    // ── Weather + Clock + Status (non-interactive, no focus) ──
                     item {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 36.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Top,
                         ) {
@@ -154,16 +162,21 @@ fun HomeScreen(
                         }
                     }
 
-                    // ── Favourites row ──
+                    // ── Favourites (topmost focusable zone) ──
+                    // When any favourite tile receives focus, scroll the list back to
+                    // the very top so weather and clock are always fully visible.
                     item {
                         FavouritesSection(
                             favourites = favourites,
                             onAppClick = { launchApp(context, viewModel, it) },
                             onAppLongClick = { viewModel.showContextMenu(it) },
+                            onFocusEntered = {
+                                scope.launch { listState.animateScrollToItem(0) }
+                            },
                         )
                     }
 
-                    // ── Apps grid header ──
+                    // ── Apps header ──
                     item {
                         Text(
                             text = "APPS",
@@ -172,7 +185,7 @@ fun HomeScreen(
                         )
                     }
 
-                    // ── Apps grid — FlowRow in chunks for non-lazy grid ──
+                    // ── Apps grid (FlowRow — non-lazy, safe inside LazyColumn) ──
                     item {
                         AppsFlowGrid(
                             apps = gridApps,
@@ -204,10 +217,17 @@ private fun FavouritesSection(
     favourites: List<AppInfo>,
     onAppClick: (AppInfo) -> Unit,
     onAppLongClick: (AppInfo) -> Unit,
+    onFocusEntered: () -> Unit,
 ) {
     val colors = LocalClearTVColors.current
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    // onFocusChanged with hasFocus=true fires when this composable OR any
+    // of its children gains focus — i.e. whenever a favourites tile is selected.
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (it.hasFocus) onFocusEntered() },
+    ) {
         Text(
             text = "FAVOURITES",
             style = ClearTVTypography.sectionHeader,
@@ -225,7 +245,7 @@ private fun FavouritesSection(
         } else {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(end = 14.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             ) {
                 items(favourites, key = { it.packageName }) { app ->
                     AppTile(
@@ -243,7 +263,7 @@ private fun FavouritesSection(
 
 /**
  * Non-lazy 6-column grid using FlowRow.
- * Avoids the Compose crash caused by LazyVerticalGrid inside LazyColumn.
+ * Safe inside LazyColumn because FlowRow is not a lazy layout.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -269,13 +289,11 @@ private fun AppsFlowGrid(
                 modifier = Modifier.weight(1f),
             )
         }
-        // Fill remainder of last row with empty weight slots + always-last settings tile
         SettingsTile(
             onClick = onSettingsClick,
             modifier = Modifier.weight(1f),
         )
-        // Pad remaining cells in last row so tiles don't stretch
-        val totalItems = apps.size + 1 // +1 for settings
+        val totalItems = apps.size + 1
         val remainder = if (totalItems % columns == 0) 0 else columns - (totalItems % columns)
         repeat(remainder) {
             Spacer(modifier = Modifier.weight(1f))
